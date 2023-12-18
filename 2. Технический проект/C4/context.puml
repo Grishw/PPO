@@ -1,0 +1,30 @@
+@startuml Electricity monitoring Web App. Диаграмма контекста
+
+' C4
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+' Sprites
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+!includeurl ICONURL/common.puml
+
+' limit text width
+skinparam wrapWidth 250
+skinparam wrapMessageWidth 200
+
+'
+title "Electricity monitoring Web App. Диаграмма контекста"
+
+' Personas 
+Person(personUser, "Компания", "Добавляет пути получения данных, анализ данных о потреблении, формирование тарифов, планирование мощностей")
+Person(personUser, "Администратор промышленных обьектов", "Отчеты о потреблении, оптимизация производственных процессов, планирование бюджета")
+Person(personAdmin, "Технический персонал", "Учет и обслуживание оборудования для мониторинга, решение технических проблем.")
+Person(personAdmin, "Домовладелец", "Мониторинг и анализ потребления электроэнергии, получение рекомендаций по снижению расходов.")
+
+System_Boundary(systemRecipe, "Веб-приложение для мониторинга потребления электроэнергии") {
+
+}
+
+' External Services
+Container_Ext(extEmail, "Email Сервис", "generic", "Отправка уведомлений.")
+    serviceAuth ---> extEmail : "[SMTP+TLS]"
+
+@enduml
