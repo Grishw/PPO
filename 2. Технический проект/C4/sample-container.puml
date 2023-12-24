@@ -1,12 +1,10 @@
-@startuml Energy Consumption Accounting System Web App. Диаграмма контейнеров (notificationeService)
+@startuml Energy Consumption Accounting System Web App. Диаграмма контейнеров (пользователи)
 
 ' C4
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
 !define DEVICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons
-!define FONTAWESOME https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5
 !include DEVICONS/php.puml
 !include DEVICONS/python.puml
-!include FONTAWESOME/users.puml
 
 LAYOUT_WITH_LEGEND()
 ' limit text width
@@ -18,35 +16,48 @@ title "Energy Consumption Accounting System Web App. Диаграмма конт
 
 
 ' Personas 
-Person(users, "Users", $sprite="users")
+Person(compUser, "Компания")
+   
+
+Person(adminUser, "Администратор промышленных обьектов")
+Person(techUser, "Технический персонал")
+Person(ownerUser, "Домовладелец")
+    
 
 ' System
 System_Boundary(systemRecipe, "Веб-приложение для мониторинга потребления электроэнергии") {
  
     ' Client Apps
-    Container(webApplication, "Web Application", "Nginx", "Предоставляет статику наружу и SPA приложение")
-        Rel(users, webApplication, "Посешае", "HTTPS")
+    Container(webApplication, "Web Application", "ReactJS", "Веб интерфейс для простых пользователей")
+        Rel_D(adminUser, webApplication, "Посешае")
+        Rel_D(ownerUser, webApplication, "Посешае")
+
+
+    Container(webApplicationCompany, "Web Application", "ReactJS", "Веб интерфейс для электро компаний")
+        Rel_D(compUser, webApplicationCompany, "Посешае")
+        Rel_D(techUser, webApplicationCompany, "Посешае")
 
     ' base Services
-    Container(apiGateway, "API Gateway", "?", "Управляет запросами")
-         Rel(webApplication, apiGateway, "Отдает пользователю в браузер")
+    Container(apiGateway, "API Gateway", "C++", "Управляет запросами")
+        Rel_D(webApplication, apiGateway, "Использует", "HTTPS")
+        Rel_D(webApplicationCompany, apiGateway, "Использует", "HTTPS")
 
     Container(dataProcessService, "Data Process Service", "Python", "Отвечает за предоставление данных и их обработку (мониторинг, анализ)", $sprite="python")     
     ContainerDb(db_dataProcessService, "Database", "PostgreSQL", "Хранит данные по потреблению энергии")    
-        Rel(dataProcessService, db_dataProcessService, "Чтение/запись", "SQL/TCP")
+        Rel_L(dataProcessService, db_dataProcessService, "Чтение/запись", "SQL/TCP")
 
     Container(deviceMonitoringService, "Device Monitoring Service", "PHP", "Отвечает за работу работу с данными по приборам от поставщиков (мониторинг, управление)", $sprite="php") 
     ContainerDb(db_interactionsWithPartnersService_device, "Database", "PostgreSQL", "Хранит данные по датчикам")    
-         Rel(deviceMonitoringService, db_interactionsWithPartnersService_device, "Чтение/запись", "SQL/TCP")
+         Rel_R(deviceMonitoringService, db_interactionsWithPartnersService_device, "Чтение/запись", "SQL/TCP")
 
     Container(userAccessControlService, "User Access Control Service", "PHP", "Отвечает за работу с поьзователями (авторизация, регистрация, контроль доступа)", $sprite="php")  
     ContainerDb(db_userAccessControlService, "Database", "PostgreSQL", "Хранит данные о пользователях")
-         Rel(userAccessControlService, db_userAccessControlService, "Чтение/запись", "SQL/TCP")
+         Rel_U(userAccessControlService, db_userAccessControlService, "Чтение/запись", "SQL/TCP")
     
     Container(interactionsWithPartnersService, "Interactions With Partners Service", "PHP", "Отвечает за взаимодействие с партнерами/поставщиками энергии (получение данных по контрактам и устройствам мониторинга)", $sprite="php") 
 
     Container(notificationeService, "Notificatione Service", "PHP", "Отвечает за уведомление пользователей", $sprite="php")
-        Rel(notificationeService, users, "Отправка уведомлений телеграм, whatsApp, Однокласники", "JSON/HTTPS")
+        Rel_L(notificationeService, ownerUser, "Отправка уведомлений телеграм, whatsApp, Однокласники", "JSON/HTTPS")
 
     'Kafka Services
     Container(kafka, "Kafka Message Broker",  "?", "Управление взаимодействием между микросервисами")
@@ -61,29 +72,31 @@ System_Boundary(systemRecipe, "Веб-приложение для монитор
         'Rel(prometeus_MonitoringService, interactionsWithPartnersService, "Api запрос", "JSON/HTTPS")
 
     'from Gateway
-     Rel(apiGateway, dataProcessService, "Api запрос", "JSON/HTTPS")
-     Rel(apiGateway, deviceMonitoringService, "Api запрос", "JSON/HTTPS")
-     Rel(apiGateway, userAccessControlService, "Api запрос", "JSON/HTTPS")
+     Rel_L(apiGateway, dataProcessService, "Api запрос", "JSON/HTTPS")
+     Rel_D(apiGateway, deviceMonitoringService, "Api запрос", "JSON/HTTPS")
+     Rel_R(apiGateway, userAccessControlService, "Api запрос", "JSON/HTTPS")
 
     'by Kafka
     'push
-        Rel(interactionsWithPartnersService, kafka, "push Msg (данные с внешнего сервиса)", "TCP/HTTPS or SASL/GSSAPI")
-        Rel(dataProcessService, kafka, "push Msg (запроса на получение данных / уведомление)", "TCP/HTTPS or SASL/GSSAPI")
-        Rel(deviceMonitoringService, kafka, "push Msg (запроса на получение данных / уведомление)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel_L(interactionsWithPartnersService, kafka, "push Msg (данные с внешнего сервиса)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel_R(dataProcessService, kafka, "push Msg (запроса на получение данных / уведомление)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel_D(deviceMonitoringService, kafka, "push Msg (запроса на получение данных / уведомление)", "TCP/HTTPS or SASL/GSSAPI")
     'pull
-        Rel(interactionsWithPartnersService, kafka, "pull Msg (чтение запроса на получение данных)", "TCP/HTTPS or SASL/GSSAPI")
-        Rel(dataProcessService, kafka, "pull Msg (данные с внешнего сервиса)", "TCP/HTTPS or SASL/GSSAPI")
-        Rel(deviceMonitoringService, kafka, "pull Msg (данные с внешнего сервиса)", "TCP/HTTPS or SASL/GSSAPI")
-        Rel(notificationeService, kafka, "pull Msg (уведомление)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel_L(interactionsWithPartnersService, kafka, "pull Msg (чтение запроса на получение данных)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel_R(dataProcessService, kafka, "pull Msg (данные с внешнего сервиса)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel_D(deviceMonitoringService, kafka, "pull Msg (данные с внешнего сервиса)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel_D(notificationeService, kafka, "pull Msg (уведомление)", "TCP/HTTPS or SASL/GSSAPI")
 
 }
 
 'External Services
-System_Ext(extPartnersSistems, "Partner's Sistems", "generic", "Система учета электроэнергии партнера")
+System_Ext(extPartnersSistems, "Partner's Sistems","Система учета электроэнергии партнера")
     Rel(interactionsWithPartnersService, extPartnersSistems, "Получает данные от", "JSON/HTTPS")
 
-System_Ext(extNotificationeSistem, "Notificatione Sistem", "generic", "Система оправки уведомлений")
-    Rel(extNotificationeSistem, users, "Отправка уведомлений по почте", "JSON/HTTPS")
+System_Ext(extNotificationeSistem, "Notificatione Sistem","Система оправки уведомлений")
+    Rel(extNotificationeSistem, techUser, "Отправка уведомлений по почте (датчики)", "JSON/HTTPS")
+    Rel(extNotificationeSistem, ownerUser, "Отправка уведомлений по почте (лимиты)", "JSON/HTTPS")
+    Rel(extNotificationeSistem, adminUser, "Отправка уведомлений по почте (лимиты)", "JSON/HTTPS")
     Rel(notificationeService, extNotificationeSistem, "Отправка уведомлений по почте", "JSON/HTTPS")
 
 System_Ext(extUserCheck, "сервис Проверка ИНН", "Проверка пользователей")
