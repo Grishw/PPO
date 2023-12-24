@@ -59,7 +59,7 @@ System_Boundary(dataProcessService, "Data Process Service") {
         Rel(appLayre, domainLayre, "использует")
 
     System_Boundary(infrastructureLayre, "Infrastructure Layer") {
-         Container(infrastructureLayreORM, "Репозиторий показаний с датчика", "", "Сохранение/Востановление агрегата")
+         Container(infrastructureLayreORM, "ORM", "", "Реализует взаимодействие с Api BD")
     }
     Rel(appLayre, infrastructureLayre, "использует")
 }
