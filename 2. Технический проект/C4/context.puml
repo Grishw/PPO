@@ -1,4 +1,4 @@
-@startuml Electricity monitoring Web App. Диаграмма контекста
+@startuml Energy Consumption Accounting System Web App. Диаграмма контекста
 
 ' C4
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
@@ -11,20 +11,27 @@ skinparam wrapWidth 250
 skinparam wrapMessageWidth 200
 
 '
-title "Electricity monitoring Web App. Диаграмма контекста"
+title "Energy Consumption Accounting System Web App. Диаграмма контекста"
 
 ' Personas 
-Person(personUser, "Компания", "Добавляет пути получения данных, анализ данных о потреблении, формирование тарифов, планирование мощностей")
-Person(personUser, "Администратор промышленных обьектов", "Отчеты о потреблении, оптимизация производственных процессов, планирование бюджета")
-Person(personAdmin, "Технический персонал", "Учет и обслуживание оборудования для мониторинга, решение технических проблем.")
-Person(personAdmin, "Домовладелец", "Мониторинг и анализ потребления электроэнергии, получение рекомендаций по снижению расходов.")
+Person(compUser, "Компания", "Добавляет пути получения данных, анализ данных о потреблении, формирование тарифов, планирование мощностей")
+Person(adminUser, "Администратор промышленных обьектов", "Отчеты о потреблении, оптимизация производственных процессов, планирование бюджета")
+Person(techUser, "Технический персонал", "Учет и обслуживание оборудования для мониторинга, решение технических проблем.")
+Person(ownerUser, "Домовладелец", "Мониторинг и анализ потребления электроэнергии, получение рекомендаций по снижению расходов.")
 
-System_Boundary(systemRecipe, "Веб-приложение для мониторинга потребления электроэнергии") {
+System(mySystem, "Система учета энергопотребления", "Optional Description")
+    compUser --> mySystem: ""
+    adminUser --> mySystem: ""
+    techUser --> mySystem: ""
+    ownerUser --> mySystem: ""
 
-}
-
-' External Services
-Container_Ext(extEmail, "Email Сервис", "generic", "Отправка уведомлений.")
-    serviceAuth ---> extEmail : "[SMTP+TLS]"
-
+' External System
+System_Ext(extUserCheck, "сервис Проверка ИНН", "Проверка пользователей")
+System_Ext(extPactCheck, "Проверка договоров на поставку электроэнергии", "Проверка договоров")
+System_Ext(extEmail, "Доставка уведомлений",  "Отправка уведомлений.")
+System_Ext(extData, "Предоставление данных", "Получение данных от и о счетчиках.")
+    mySystem ---> extUserCheck : ""
+    mySystem ---> extPactCheck : ""
+    mySystem ---> extEmail : ""
+    mySystem ---> extData : ""
 @enduml

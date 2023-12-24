@@ -1,57 +1,95 @@
-@startuml Recipe Web App. Диаграмма контейнеров
+@startuml Energy Consumption Accounting System Web App. Диаграмма контейнеров (notificationeService)
 
 ' C4
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
-' Sprites
-!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
-!includeurl ICONURL/common.puml
+!define DEVICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons
+!define FONTAWESOME https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5
+!include DEVICONS/php.puml
+!include DEVICONS/python.puml
+!include FONTAWESOME/users.puml
 
+LAYOUT_WITH_LEGEND()
 ' limit text width
 skinparam wrapWidth 250
 skinparam wrapMessageWidth 200
 
 '
-title "Recipe Web App. Диаграмма контейнеров"
+title "Energy Consumption Accounting System Web App. Диаграмма контекста"
 
 
 ' Personas 
-Person(personUser, "Пользователь", "Просматривает, добавляет и комментирует рецепты.")
-Person(personAdmin, "Админ", "Управляет рецептами, пользователями и комментариями.")
+Person(users, "Users", $sprite="users")
 
-
-System_Boundary(systemRecipe, "Веб-приложение для рецептов") {
-
+' System
+System_Boundary(systemRecipe, "Веб-приложение для мониторинга потребления электроэнергии") {
+ 
     ' Client Apps
-    Container(clientWebApp, "Веб-интерфейс", "Chrome 80+, IE 11+/Edge, Safari 12+; SPA на ReactJS", "Предоставляет интерфейс для просмотра, добавления и комментирования рецептов.")
-        personUser --> clientWebApp : "Просмотр, добавление и комментирование рецептов"
-        
-    Container(clientAdminPanel, "Панель администратора", "Chrome 80+, IE 11+/Edge, Safari 12+; SPA на ReactJS", "Управление рецептами, пользователями и комментариями.")
-        personAdmin --> clientAdminPanel : "Управляет рецептами, пользователями и комментариями."
+    Container(webApplication, "Web Application", "Nginx", "Предоставляет статику наружу и SPA приложение")
+        Rel(users, webApplication, "Посешае", "HTTPS")
 
-    ' Server Services
-    Container(apiGateway, "API Gateway", "Ingress Controller | Nginx", "Маршрутизация запросов к сервисам.")
-        clientWebApp --> apiGateway : "API-вызовы\n[HTTPS, REST]"
-        clientAdminPanel --> apiGateway : "API-вызовы\n[HTTPS, REST]"
+    ' base Services
+    Container(apiGateway, "API Gateway", "?", "Управляет запросами")
+         Rel(webApplication, apiGateway, "Отдает пользователю в браузер")
 
-    Container(serviceAuth, "Сервис аутентификации", "KeyCloak; Java", "Управляет аутентификацией и авторизацией.")
-        apiGateway --> serviceAuth : "Аутентификация и авторизация\n[HTTP; Веб-интерфейс / REST]" 
-    ContainerDb(rdbAuth, "Схема auth", "PostgreSQL 12+", "Данные пользователей.")
-        serviceAuth --> rdbAuth : "[Native; TCP/IP]"
+    Container(dataProcessService, "Data Process Service", "Python", "Отвечает за предоставление данных и их обработку (мониторинг, анализ)", $sprite="python")     
+    ContainerDb(db_dataProcessService, "Database", "PostgreSQL", "Хранит данные по потреблению энергии")    
+        Rel(dataProcessService, db_dataProcessService, "Чтение/запись", "SQL/TCP")
 
-    Container(serviceRecipes, "Сервис рецептов", "Kotlin", "Управление рецептами и комментариями.")
-        apiGateway --> serviceRecipes : "[HTTP; REST]"
-    ContainerDb(rdbRecipes, "Схема recipes", "PostgreSQL 12+", "Данные рецептов и комментариев.")
-        serviceRecipes --> rdbRecipes : "[Native; TCP/IP]"
-    ContainerDb(storageRecipes, "Файловое хранилище", "SeaweedFS", "Фотографии рецептов.")
-        serviceRecipes --> storageRecipes : "[S3; HTTPS]"
+    Container(deviceMonitoringService, "Device Monitoring Service", "PHP", "Отвечает за работу работу с данными по приборам от поставщиков (мониторинг, управление)", $sprite="php") 
+    ContainerDb(db_interactionsWithPartnersService_device, "Database", "PostgreSQL", "Хранит данные по датчикам")    
+         Rel(deviceMonitoringService, db_interactionsWithPartnersService_device, "Чтение/запись", "SQL/TCP")
 
+    Container(userAccessControlService, "User Access Control Service", "PHP", "Отвечает за работу с поьзователями (авторизация, регистрация, контроль доступа)", $sprite="php")  
+    ContainerDb(db_userAccessControlService, "Database", "PostgreSQL", "Хранит данные о пользователях")
+         Rel(userAccessControlService, db_userAccessControlService, "Чтение/запись", "SQL/TCP")
+    
+    Container(interactionsWithPartnersService, "Interactions With Partners Service", "PHP", "Отвечает за взаимодействие с партнерами/поставщиками энергии (получение данных по контрактам и устройствам мониторинга)", $sprite="php") 
 
-    ContainerQueue(eventBus, "Шина событий", "RabbitMQ", "Маршрутизация сообщений между сервисами.")
-        serviceRecipes ---> eventBus : "Pub/sub\n[AMQP]"
+    Container(notificationeService, "Notificatione Service", "PHP", "Отвечает за уведомление пользователей", $sprite="php")
+        Rel(notificationeService, users, "Отправка уведомлений телеграм, whatsApp, Однокласники", "JSON/HTTPS")
+
+    'Kafka Services
+    Container(kafka, "Kafka Message Broker",  "?", "Управление взаимодействием между микросервисами")
+    ContainerDb(db_kafka, "Database", "Kafka Apache", "Хранит данные")
+         Rel(kafka, db_kafka, "Чтение/запись", "SQL/TCP")
+
+    'Prometeus Services
+    'Container(prometeus_MonitoringService, "Prometeus",  "?", "Мониторинг системы")
+        'Rel(prometeus_MonitoringService, dataProcessService, "Api запрос", "JSON/HTTPS")
+        'Rel(prometeus_MonitoringService, deviceMonitoringService, "Api запрос", "JSON/HTTPS")
+        'Rel(prometeus_MonitoringService, userAccessControlService, "Api запрос", "JSON/HTTPS")
+        'Rel(prometeus_MonitoringService, interactionsWithPartnersService, "Api запрос", "JSON/HTTPS")
+
+    'from Gateway
+     Rel(apiGateway, dataProcessService, "Api запрос", "JSON/HTTPS")
+     Rel(apiGateway, deviceMonitoringService, "Api запрос", "JSON/HTTPS")
+     Rel(apiGateway, userAccessControlService, "Api запрос", "JSON/HTTPS")
+
+    'by Kafka
+    'push
+        Rel(interactionsWithPartnersService, kafka, "push Msg (данные с внешнего сервиса)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel(dataProcessService, kafka, "push Msg (запроса на получение данных / уведомление)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel(deviceMonitoringService, kafka, "push Msg (запроса на получение данных / уведомление)", "TCP/HTTPS or SASL/GSSAPI")
+    'pull
+        Rel(interactionsWithPartnersService, kafka, "pull Msg (чтение запроса на получение данных)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel(dataProcessService, kafka, "pull Msg (данные с внешнего сервиса)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel(deviceMonitoringService, kafka, "pull Msg (данные с внешнего сервиса)", "TCP/HTTPS or SASL/GSSAPI")
+        Rel(notificationeService, kafka, "pull Msg (уведомление)", "TCP/HTTPS or SASL/GSSAPI")
+
 }
 
-' External Services
-Container_Ext(extEmail, "Email Сервис", "generic", "Отправка уведомлений.")
-    serviceAuth ---> extEmail : "[SMTP+TLS]"
+'External Services
+System_Ext(extPartnersSistems, "Partner's Sistems", "generic", "Система учета электроэнергии партнера")
+    Rel(interactionsWithPartnersService, extPartnersSistems, "Получает данные от", "JSON/HTTPS")
+
+System_Ext(extNotificationeSistem, "Notificatione Sistem", "generic", "Система оправки уведомлений")
+    Rel(extNotificationeSistem, users, "Отправка уведомлений по почте", "JSON/HTTPS")
+    Rel(notificationeService, extNotificationeSistem, "Отправка уведомлений по почте", "JSON/HTTPS")
+
+System_Ext(extUserCheck, "сервис Проверка ИНН", "Проверка пользователей")
+    Rel(userAccessControlService, extUserCheck, "Получение информации о ИНН от", "JSON/HTTPS")
+
+System_Ext(extPactCheck, "Проверка договоров на поставку электроэнергии", "Проверка договоров")
+    Rel(userAccessControlService, extPactCheck, "Получение информации о договоре от", "JSON/HTTPS")
 
 @enduml
