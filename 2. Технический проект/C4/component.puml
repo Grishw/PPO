@@ -70,8 +70,8 @@ kafkaConsumer -up-> apacheKafkaData : "прием данных\n [TCP/HTTPS]"
 apiProcessingUnit -down-> dataProcessUnit : "Uses"
 
 ' bdInteractingComponent
-dataManapulatingComponent -down-> bdInteractingComponent : "Uses"
-dataAnalyticsComponent -down-> bdInteractingComponent : "Uses"
+dataManapulatingComponent -down-> dbInteractingComponent : "Uses"
+dataAnalyticsComponent -down-> dbInteractingComponent : "Uses"
 
 ' db
 dbInteractingComponent -down-> db : "чтение/запись"
