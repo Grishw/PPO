@@ -13,20 +13,21 @@ System(trading_api_gateway, "API Gateway")
 
 package "Kubernetes k8s Cluster" {  
     ' Balancer
-    System(trading_backend_load_balancer, "load balancer", "Kubernets External Load Balancer", "")
+    System(trading_backend_load_balancer, "load balancer", "Kubernets External Load Balancer - Nginx (Linux)", "")
 
     ' Node (Kubernets)
     Deployment_Node(trading_backend_instance_1, "Backend instance 1", "k8s node on bare metal")
     Deployment_Node(trading_backend_instance_2, "Backend instance 2", "k8s node on bare metal")
     Deployment_Node(trading_backend_instance_N, "Backend instance N", "k8s node on bare metal")    
-
+}
 
 
 ' Queue
-System(trading_message_queue, "Message queue", "Kafka Server (Linux)")
+package "Kafka Apache cluster" { 
+    System(trading_message_queue, "Message queue", "Kafka Server (Linux)")
+}
 
-
-
+package "Kubernetes DB cluster" { 
     ' Db Balancer
     System(trading_db_load_balancer, "Database load balancer", "Pgpool-II (Linux)")
 
