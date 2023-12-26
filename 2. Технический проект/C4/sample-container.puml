@@ -12,7 +12,7 @@ skinparam wrapWidth 250
 skinparam wrapMessageWidth 200
 
 '
-title "Energy Consumption Accounting System Web App. Диаграмма контекста"
+title "Energy Consumption Accounting System Web App. Диаграмма контейнеров"
 
 
 ' Personas 
@@ -47,7 +47,7 @@ System_Boundary(systemRecipe, "Веб-приложение для монитор
         Rel_L(dataProcessService, db_dataProcessService, "Чтение/запись", "SQL/TCP")
 
     Container(deviceMonitoringService, "Device Monitoring Service", "PHP", "Отвечает за работу работу с данными по приборам от поставщиков (мониторинг, управление)", $sprite="php") 
-    ContainerDb(db_interactionsWithPartnersService_device, "Database", "PostgreSQL", "Хранит данные по датчикам")    
+    ContainerDb(db_interactionsWithPartnersService_device, "Database", "PostgreSQL", "Хранит данные по датчикам, отчеты, историю изменения состояний")    
          Rel_R(deviceMonitoringService, db_interactionsWithPartnersService_device, "Чтение/запись", "SQL/TCP")
 
     Container(userAccessControlService, "User Access Control Service", "PHP", "Отвечает за работу с поьзователями (авторизация, регистрация, контроль доступа)", $sprite="php")  
@@ -63,13 +63,6 @@ System_Boundary(systemRecipe, "Веб-приложение для монитор
     Container(kafka, "Kafka Message Broker",  "?", "Управление взаимодействием между микросервисами")
     ContainerDb(db_kafka, "Database", "Kafka Apache", "Хранит данные")
          Rel(kafka, db_kafka, "Чтение/запись", "SQL/TCP")
-
-    'Prometeus Services
-    'Container(prometeus_MonitoringService, "Prometeus",  "?", "Мониторинг системы")
-        'Rel(prometeus_MonitoringService, dataProcessService, "Api запрос", "JSON/HTTPS")
-        'Rel(prometeus_MonitoringService, deviceMonitoringService, "Api запрос", "JSON/HTTPS")
-        'Rel(prometeus_MonitoringService, userAccessControlService, "Api запрос", "JSON/HTTPS")
-        'Rel(prometeus_MonitoringService, interactionsWithPartnersService, "Api запрос", "JSON/HTTPS")
 
     'from Gateway
      Rel_L(apiGateway, dataProcessService, "Api запрос", "JSON/HTTPS")

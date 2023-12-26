@@ -15,59 +15,63 @@ skinparam wrapMessageWidth 200
 title "Energy Consumption Accounting System Web App. Диаграмма компонента"
 
 
-' System
-
 ' Client Apps
 Container(webApplication, "Web Application", "ReactJS", "Веб интерфейс для простых пользователей")
-
 Container(webApplicationCompany, "Web Application", "ReactJS", "Веб интерфейс для электро компаний")
 
-' base Services
+' Gateway Services
 Container(apiGateway, "API Gateway", "C++", "Управляет запросами")
-    Rel_D(webApplication, apiGateway, "Использует", "HTTPS")
-    Rel_D(webApplicationCompany, apiGateway, "Использует", "HTTPS")
 
+' Kafka Queue
 Container(apacheKafkaData, "Очередь данных", "Apache Kafka Partitions", "отвечает за данные по потреблению энергии")
 Container(apacheKafkaNotify, "Очередь уведомлений", "Apache Kafka Partitions", "отвечает за данные по потреблению энергии")
 
+' Servise
 System_Boundary(dataProcessService, "Data Process Service") {
-    System_Boundary(apiLayre, "API Layer") {
-        Container(controllerApi, "controller api data", "Web API Controller", "обрабатывает HTTP запросы, извлекает параметры")
-        Container(kafkaConsumer, "fetch msg", "Kafka Consumer", "обрабатывает Massage из Apache Kafka (данные)")
-        Container(kafkaProduser, "send msg", "Kafka Produser", "отправляет Massage в Apache Kafka")
-            Rel(kafkaProduser, apacheKafkaData, "отпавка сообщения о запросе обновления данных")
-            Rel(kafkaProduser, apacheKafkaNotify, "отпавка сообщения о завершение обновления данных")
-    }
-
-   
-    System_Boundary(appLayre, "APP Layer") {
-        System_Boundary(appLayreQueries, "Queries") {
-            Container(appLayreQueriesGetPred, "getPredictConsumption", "", "прогноз потребления электричества")
-            Container(appLayreQueriesGetRating, "getConsumerRating", "", "рейтинг потребления энергии по приборам")
-        }
-
-        System_Boundary(appLayreCommands, "Commands") {
-            Container(appLayreCommandsAddData, "Add Data", "", "добавление данных датчика")
-             Container(appLayreCommandsUpdateData, "Update Data", "", "обнавление данных датчика")
+    ' Api controller class (use all in)
+    Container_Boundary(apiProcessingUnit, "apiProcessingUnit") {
+        Container(apiDataController, "apiDataController", "Web API Controller", "обрабатывает HTTP запросы, извлекает параметры")
+        ' Kafka controller class (use all in)
+        Container_Boundary(kafkaController, "kafkaController") {
+            Container(kafkaConsumer, "kafkaConsumer", "Kafka Consumer", "обрабатывает Massage из Apache Kafka (данные)")
+            Container(kafkaProduser, "kafkaProduser", "Kafka Produser", "отправляет Massage в Apache Kafka")
         }
     }
-         Rel(apiLayre, appLayre, "использует")
 
-    System_Boundary(domainLayre, "Domain Layer") {
-         Container(domainLayreData, "Показания датчика", "Agregate", "показания датчика в определенный момент (день, неделя, месяц)")
+    ' Work with data class (use all in)
+    Container_Boundary(dataProcessUnit, "dataProcessingUnit") {
+        ' Save, Read, Owerride, Write ...
+        Container(dataManapulatingComponent, "dataManapulatingComponent", "", "управление данными: созранение/чтение/перезапись... ")
+        ' Analytics
+        Container(dataAnalyticsComponent, "dataAnalyticsComponent", "", "Анализ данных: обработка/прогнозы/рекомендации...")
     }
-        Rel(appLayre, domainLayre, "использует")
 
-    System_Boundary(infrastructureLayre, "Infrastructure Layer") {
-         Container(infrastructureLayreORM, "ORM", "", "Реализует взаимодействие с Api BD")
-    }
-    Rel(appLayre, infrastructureLayre, "использует")
+    ' Work with db class (use all in)
+    Container(dbInteractingComponent, "dbInteractingComponent", "", "взаимодействие с баззой данных")
 }
 
-Rel_D(apiGateway, controllerApi, "Использует", "HTTPS")
+' bd component
+ContainerDb(db, "Database", "container: PostgreSQL Schema", "Хранит данные по потреблению энергии") 
 
-ContainerDb(db_dataProcessService, "Database", "PostgreSQL", "Хранит данные по потреблению энергии") 
-    Rel(infrastructureLayre, db_dataProcessService, "чтение/запись")
 
-System_Ext(extPartnersSistems, "Partner's Sistems", "Система учета электроэнергии партнера")
-    Rel(controllerApi, extPartnersSistems, "Получает данные от", "JSON/HTTPS")
+' References
+' apiGateway
+webApplication --> apiGateway : "Использует\n [HTTPS]"
+webApplicationCompany --> apiGateway : "Использует\n [HTTPS]"
+apiGateway --> apiDataController : "Использует\n [HTTPS]"
+
+' kafka
+kafkaProduser -left-> apacheKafkaNotify : "отпавка сообщения о завершение обновления данных, о запросе обновления данных, о завершение процесса \n [TCP/HTTPS]"
+
+kafkaConsumer -down-> apacheKafkaNotify : "ожидание сообщения на поступление данных\n [TCP/HTTPS]"
+kafkaConsumer -up-> apacheKafkaData : "прием данных\n [TCP/HTTPS]"
+
+' apiProcessingUnit
+apiProcessingUnit -down-> dataProcessUnit : "Uses"
+
+' bdInteractingComponent
+dataManapulatingComponent -down-> bdInteractingComponent : "Uses"
+dataAnalyticsComponent -down-> bdInteractingComponent : "Uses"
+
+' db
+dbInteractingComponent -down-> db : "чтение/запись"
